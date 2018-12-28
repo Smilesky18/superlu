@@ -1,0 +1,21 @@
+%%MatrixMarket matrix coordinate real general
+%-------------------------------------------------------------------------------
+% UF Sparse Matrix Collection, Tim Davis
+% http://www.cise.ufl.edu/research/sparse/matrices/Bai/rw136
+% name: Bai/rw136
+% [MARKOV CHAIN MODELING, RANDOM WALK  (M = 15)  G. W. STEWART]
+% id: 334
+% date: 1978
+% author: G. Stewart
+% ed: Z. Bai, D. Day, J. Demmel, J. Dongarra
+% fields: title A name id date author ed kind
+% kind: statistical/mathematical problem
+%-------------------------------------------------------------------------------
+3 3 6
+1 1 2
+2 1 3
+1 2 3
+3 2 -1
+2 3 4
+3 3 -3
+

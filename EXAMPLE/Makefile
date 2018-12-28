@@ -51,6 +51,9 @@ DLINXEXM3 	= dlinsolx3.o
 SUPERLUEXM 	= superlu.o sp_ienv.o
 DITSOL	     	= ditersol.o dfgmr.o
 DITSOL1	     	= ditersol1.o dfgmr.o
+LUSOLVER	= LU_Solver.o
+COMPARION 	= comparion.o
+LUSOLVERPVIOT	= LU_Solver_Pviot.o
 
 CLINEXM 	= clinsol.o
 CLINEXM1 	= clinsol1.o
@@ -76,7 +79,8 @@ all:    single double complex complex16
 single:    slinsol slinsol1 slinsolx slinsolx1 slinsolx2 slinsolx3 \
 		sitersol sitersol1
 double:    dlinsol dlinsol1 dlinsolx dlinsolx1 dlinsolx2 dlinsolx3 \
-		superlu ditersol ditersol1
+		superlu ditersol ditersol1 LU_Solver comparion     \
+	        LU_Solver_Pviot
 complex:   clinsol clinsol1 clinsolx clinsolx1 clinsolx2 clinsolx3 \
 		citersol citersol1
 complex16: zlinsol zlinsol1 zlinsolx zlinsolx1 zlinsolx2 zlinsolx3 \
@@ -107,7 +111,16 @@ sitersol1: $(SITSOL1) $(SUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(SITSOL1) $(LIBS) -lm -o $@
 
 dlinsol: $(DLINEXM) $(SUPERLULIB)
-	$(LOADER) $(LOADOPTS) $(DLINEXM) $(LIBS) -lm -o $@
+	$(LOADER) $(LOADOPTS) $(DLINEXM) $(LIBS) -g -lm -o $@
+
+LU_Solver: $(LUSOLVER) $(SUPERLULIB)
+	 $(LOADER) $(LOADOPTS) $(LUSOLVER) $(LIBS) -g -lm -o $@
+	 
+LU_Solver_Pviot: $(LUSOLVERPVIOT) $(SUPERLULIB)
+	 $(LOADER) $(LOADOPTS) $(LUSOLVERPVIOT) $(LIBS) -g -lm -o $@
+	 
+comparion: $(COMPARION) $(SUPERLULIB)
+	 $(LOADER) $(LOADOPTS) $(COMPARION) $(LIBS) -g -lm -o $@
 
 dlinsol1: $(DLINEXM1) $(SUPERLULIB)
 	$(LOADER) $(LOADOPTS) $(DLINEXM1) $(LIBS) -lm -o $@
@@ -189,7 +202,7 @@ zitersol1: $(ZITSOL1) $(SUPERLULIB)
 
 clean:	
 	rm -f *.o *linsol *linsol1 *linsolx *linsolx1 *linsolx2 *linsolx3 \
-	    superlu *itersol *itersol1
+	    superlu *itersol *itersol1 LU_solver
 
 
 

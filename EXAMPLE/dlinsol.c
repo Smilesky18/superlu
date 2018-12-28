@@ -18,10 +18,97 @@ at the top-level directory.
  */
 #include "slu_ddefs.h"
 
+/*void LU(double A[][800], double *x[800], int n)
+{
+  double L[n][n], U[n][n];
+  double sum_U = 0.0, sum_L = 0.0, sum_y = 0.0, sum_x = 0.0;
+  double y[n];
+  int i, j, r, k;
+  //U的第一行的解向量
+  for ( i = 0; i < n; i++ )
+  {
+    U[0][i] = A[0][i];
+  }
+  //L的第一列的解向量
+  for ( i = 1; i < n; i++ )
+  {
+    L[i][0] = A[i][0]/U[0][0];
+  }
+  //对L的对角线元素赋值为1
+  for ( i = 0; i < n; i++ )LU( A, x, n);
+  {
+    L[i][i] = 1;
+  }
+  //计算U的第r行，L的第r列元素（r=2,...n-1）
+  for ( r = 1; r < n; r++ )
+  {
+    for ( i = r; i < n; i++ )
+    {
+      for ( k = 0; k < r; k++ )
+      {
+	sum_U += L[r][k]*U[k][i];
+      }
+      U[r][i] = A[r][i] - sum_U;
+      sum_U = 0.0;
+    }
+    for ( i = r+1; i < n; i++ )
+    {
+      for ( k = 0; k < r; k++ )
+      {
+	sum_L += L[i][k]*U[k][r];
+      }
+      L[i][r] = ( A[i][r] - sum_L ) / U[r][r];
+      sum_L = 0.0;
+    }
+  }
+  /*printf("The element of L: ");
+  for ( i = 0; i < n; i++ )
+    for( j = 0; j < n; j++ )
+    {
+      printf("L[%d][%d]=%f ", i, j, L[i][j]);
+    }
+  
+  printf("The element of U: ");
+  for ( i = 0; i < n; i++ )
+    for( j = 0; j < n; j++ )
+    {
+      printf("U[%d][%d]=%f ", i, j, U[i][j]);
+    }*/
+  //求解Ly=b, Ux=y的计算公式
+  /*y[0] = A[0][n];  
+  for ( i = 1; i < n; i++ )
+  {
+    for ( k = 0; k < i; k++ )
+    {
+      sum_y += L[i][k]*y[k]; 
+    }
+    y[i] = A[i][n] - sum_y;
+    sum_y = 0.0;
+  }
+  x[n-1] = y[n-1] / U[n-1][n-1];
+  for ( i = n-2; i >= 0; i-- )
+  {
+    for ( k = i + 1; k < n; k++ )
+    {
+      sum_x += U[i][k]*x[k];
+    }
+    x[i] = ( y[i] - sum_x ) / U[i][i];
+    sum_x = 0.0;
+  }
+  /*for ( i = 0; i < n; i++ )
+  {
+    printf("解元素为: %lf\n", x[i]);
+  }*/
+//}
+
 int main(int argc, char *argv[])
 {
     SuperMatrix A;
     NCformat *Astore;
+    DNformat *Bstore;
+    int *colptr_B;
+    int *rowind_B;
+    double *nzval_B, *nzval_A;
     double   *a;
     int      *asub, *xa;
     int      *perm_c; /* column permutation vector */
@@ -37,6 +124,10 @@ int main(int argc, char *argv[])
     superlu_options_t options;
     SuperLUStat_t stat;
     FILE      *fp = stdin;
+    int i, j;
+    int NUMCol, counter_num = 0;
+    double A_Me[800][800];
+    double x[800];
     
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC("Enter main()");
@@ -56,7 +147,7 @@ int main(int argc, char *argv[])
      */
     set_default_options(&options);
 
-#if 1
+#if 0
     /* Read the matrix in Harwell-Boeing format. */
     dreadhb(fp, &m, &n, &nnz, &a, &asub, &xa);
 #else
@@ -66,52 +157,46 @@ int main(int argc, char *argv[])
 
     dCreate_CompCol_Matrix(&A, m, n, nnz, a, asub, xa, SLU_NC, SLU_D, SLU_GE);
     Astore = A.Store;
+    nzval_A = Astore->nzval;
     printf("Dimension %dx%d; # nonzeros %d\n", A.nrow, A.ncol, Astore->nnz);
     
     nrhs   = 1;
     if ( !(rhs = doubleMalloc(m * nrhs)) ) ABORT("Malloc fails for rhs[].");
+    for ( i = 0; i < m; i++ )
+    {
+      rhs[i] = 1.0;
+    }
     dCreate_Dense_Matrix(&B, m, nrhs, rhs, m, SLU_DN, SLU_D, SLU_GE);
-    xact = doubleMalloc(n * nrhs);
-    ldx = n;
-    dGenXtrue(n, nrhs, xact, ldx);
-    dFillRHS(options.Trans, nrhs, xact, ldx, &A, &B);
+    /*for ( i = 0; i < m; i++ )
+      printf(" the element in rhs is: %f\n", rhs[i]);*/
+    Bstore = (DNformat *)B.Store;
+    nzval_B = (double *)Bstore->nzval;
+    /*for (i=0; i < Bstore->lda; i++)
+      printf("B的第%d个元素是: %lf\n",i, *(nzval_B+i));*/
+    //xact = doubleMalloc(n * nrhs);
+    //ldx = n;
+    //dGenXtrue(n, nrhs, xact, ldx);
+    //dFillRHS(options.Trans, nrhs, xact, ldx, &A, &B);
 
     if ( !(perm_c = intMalloc(n)) ) ABORT("Malloc fails for perm_c[].");
     if ( !(perm_r = intMalloc(m)) ) ABORT("Malloc fails for perm_r[].");
 
     /* Initialize the statistics variables. */
     StatInit(&stat);
-    
+    Bstore = (DNformat *)B.Store;
+    nzval_B = (double *)Bstore->nzval;
+    /*for (i=0; i < Bstore->lda; i++)
+      printf("before dgssv B的第%d个元素是: %lf\n",i, *(nzval_B+i));*/
     dgssv(&options, &A, perm_c, perm_r, &L, &U, &B, &stat, &info);
-    
-    if ( info == 0 ) {
-
-	/* This is how you could access the solution matrix. */
-        double *sol = (double*) ((DNformat*) B.Store)->nzval; 
-
-	 /* Compute the infinity norm of the error. */
-	dinf_norm_error(nrhs, &B, xact);
-
-	Lstore = (SCformat *) L.Store;
-	Ustore = (NCformat *) U.Store;
-    	printf("No of nonzeros in factor L = %d\n", Lstore->nnz);
-    	printf("No of nonzeros in factor U = %d\n", Ustore->nnz);
-    	printf("No of nonzeros in L+U = %d\n", Lstore->nnz + Ustore->nnz - n);
-    	printf("FILL ratio = %.1f\n", (float)(Lstore->nnz + Ustore->nnz - n)/nnz);
-	
-	dQuerySpace(&L, &U, &mem_usage);
-	printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
-	       mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
-	
-    } else {
-	printf("dgssv() error returns INFO= %d\n", info);
-	if ( info <= n ) { /* factorization completes */
-	    dQuerySpace(&L, &U, &mem_usage);
-	    printf("L\\U MB %.3f\ttotal MB needed %.3f\n",
-		   mem_usage.for_lu/1e6, mem_usage.total_needed/1e6);
-	}
-    }
-
+    Bstore = (DNformat *)B.Store;
+    nzval_B = (double *)Bstore->nzval;
+    //printf("after dgssv the lda of B is: %d\n", Bstore->lda);
+    //for (i=0; i < Bstore->lda; i++)
+    //  printf("after dgssv B的第%d个元素是: %lf\n",i, *(nzval_B+i));
+    double *sol = (double*) ((DNformat*) B.Store)->nzval;
+    for (i=0; i < Bstore->lda; i++)
+      printf("解元素为: %lf\n", sol[i]);
+  
     if ( options.PrintStat ) StatPrint(&stat);
     StatFree(&stat);
 
@@ -127,5 +212,20 @@ int main(int argc, char *argv[])
 #if ( DEBUGlevel>=1 )
     CHECK_MALLOC("Exit main()");
 #endif
+     for ( j = 0; j < n; j++ )
+    {
+      NUMCol = xa[j+1] - xa[j];
+      for ( i = 0; i < NUMCol; i++ )
+      {
+	A_Me[asub[counter_num]][j] = a[counter_num];
+	counter_num++;
+      }
+    }
+    for ( i = 0; i < n; i++ )
+    {
+      A_Me[i][n] = 1.0;
+    }
+    //LU( A, x, n);
+    
 }
 
